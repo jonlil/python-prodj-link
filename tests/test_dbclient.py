@@ -2,22 +2,48 @@ import unittest
 from packets import DBMessage
 import dataprovider
 from dbclient import DBClient
-#from construct import Container
+from construct import Container
 
 
 class DbclientTestCase(unittest.TestCase):
-    def test_parsing_root_menu_rendering_request(self):
-        raw_data = bytes([
-            0x11, 0x87, 0x23, 0x49, 0xae, 0x11, 0x05, 0x80,
-            0x00, 0x0f, 0x10, 0x30, 0x00, 0x0f, 0x06, 0x14,
-            0x00, 0x00, 0x00, 0x0c, 0x06, 0x06, 0x06, 0x06,
-            0x06, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x11, 0x02, 0x01, 0x04, 0x01,
-            0x11, 0x00, 0x00, 0x00, 0x00,
-            0x11, 0x00, 0x00, 0x00, 0x07,
-            0x11, 0x00, 0x00, 0x00, 0x00,
-            0x11, 0x00, 0x00, 0x00, 0x08,
-            0x11, 0x00, 0x00, 0x00, 0x00,
-        ])
+    def setUp(self):
+        self.client = DBClient('mock_prodj')
 
-        parsed = DBMessage.parse(raw_data)
+    def test_parsing_root_metadata_payload(self):
+        self.assertEqual({
+                'menu_id': 22,
+                'name': '\ufffaARTIST\ufffb',
+            },
+            self.client.parse_metadata_payload(Container(args=[
+                Container(type='int32')(value=0),
+                Container(type='int32')(value=22),
+                Container(type='int32')(value=20),
+                Container(type='string')(value='\ufffaARTIST\ufffb'),
+                Container(type='int32')(value=2),
+                Container(type='string')(value=''),
+                Container(type='int32')(value=149),
+                Container(type='int32')(value=0),
+                Container(type='int32')(value=0),
+                Container(type='int32')(value=0),
+                Container(type='int32')(value=0),
+                Container(type='int32')(value=0),
+            ]).args),
+        )
+
+        self.assertEqual({
+            'menu_id': 3,
+            'name': '\ufffaALBUM\ufffb',
+        }, self.client.parse_metadata_payload(Container(args=[
+            Container(type='int32')(value=0),  # 0
+            Container(type='int32')(value=3),  # 1
+            Container(type='int32')(value=16),  # 2
+            Container(type='string')(value='\ufffaALBUM\ufffb'),  # 3
+            Container(type='int32')(value=2),  # 4
+            Container(type='string')(value=''),  # 5
+            Container(type='int32')(value=130),  # 6
+            Container(type='int32')(value=0),
+            Container(type='int32')(value=0),
+            Container(type='int32')(value=0),
+            Container(type='int32')(value=0),
+            Container(type='int32')(value=0),
+        ]).args))
